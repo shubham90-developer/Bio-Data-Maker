@@ -1,5 +1,6 @@
 {
   "/page": "app/page.js",
-  "/templates/page": "app/templates/page.js",
-  "/create-biodata/page": "app/create-biodata/page.js"
+  "/create-biodata/page": "app/create-biodata/page.js",
+  "/blog/page": "app/blog/page.js",
+  "/templates/page": "app/templates/page.js"
 }

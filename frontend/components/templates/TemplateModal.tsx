@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TemplateMeta } from "@/types/biodata";
 import { useBiodataStore } from "@/store/useBiodataStore";
@@ -20,6 +20,25 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
 }) => {
   const router = useRouter();
   const { data, setTemplate } = useBiodataStore();
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [modalScale, setModalScale] = useState<number>(0.75);
+
+  useEffect(() => {
+    const el = previewContainerRef.current;
+    if (!el) return;
+
+    const computeScale = () => {
+      const availableWidth = el.clientWidth - 32;
+      const nextScale = Math.min(0.85, availableWidth / 794);
+      setModalScale(nextScale > 0.3 ? nextScale : 0.75);
+    };
+
+    computeScale();
+    const resizeObserver = new ResizeObserver(computeScale);
+    resizeObserver.observe(el);
+
+    return () => resizeObserver.disconnect();
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -59,13 +78,30 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
         </button>
 
         {/* Left: Scrollable Document Preview */}
-        <div className="flex-1 bg-[#ECE5D8] overflow-y-auto p-4 sm:p-8 flex justify-center items-start min-h-[400px]">
-          <div className="transform scale-[0.65] sm:scale-[0.8] origin-top transition-transform">
-            <BiodataRenderer
-              data={data}
-              overrideTemplateId={template.id}
-              showWatermark={false}
-            />
+        <div
+          ref={previewContainerRef}
+          className="flex-1 bg-[#ECE5D8] overflow-y-auto p-3 sm:p-6 flex justify-center items-start min-h-[400px]"
+        >
+          <div
+            style={{
+              width: 794 * modalScale,
+              height: 1123 * modalScale,
+            }}
+          >
+            <div
+              className="origin-top-left shadow-2xl transition-transform duration-200"
+              style={{
+                width: 794,
+                height: 1123,
+                transform: `scale(${modalScale})`,
+              }}
+            >
+              <BiodataRenderer
+                data={data}
+                overrideTemplateId={template.id}
+                showWatermark={false}
+              />
+            </div>
           </div>
         </div>
 

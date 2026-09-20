@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useBiodataStore } from "@/store/useBiodataStore";
 import { BiodataRenderer } from "@/components/templates/BiodataRenderer";
@@ -20,11 +20,39 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+const A4_WIDTH = 794;
+const A4_HEIGHT = 1123;
+
 export default function PreviewPage() {
   const { data, setField } = useBiodataStore();
-  const [zoomLevel, setZoomLevel] = useState(0.8);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [autoFitScale, setAutoFitScale] = useState<number>(1);
   const [showWatermark, setShowWatermark] = useState(false);
   const [checkoutFormat, setCheckoutFormat] = useState<"image" | "pdf" | "word" | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const computeScale = () => {
+      const availableWidth = el.clientWidth - 16;
+      const nextScale = Math.min(1, availableWidth / A4_WIDTH);
+      setAutoFitScale(nextScale > 0 ? nextScale : 1);
+    };
+
+    computeScale();
+
+    const resizeObserver = new ResizeObserver(computeScale);
+    resizeObserver.observe(el);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const finalScale = autoFitScale * zoomLevel;
+  const scaledWidth = A4_WIDTH * finalScale;
+  const scaledHeight = A4_HEIGHT * finalScale;
 
   const handlePrint = () => {
     window.print();
@@ -120,15 +148,29 @@ export default function PreviewPage() {
             </div>
 
             {/* Document Scaled Container */}
-            <div className="w-full overflow-x-auto flex justify-center pb-4">
+            <div
+              ref={containerRef}
+              className="w-full overflow-x-auto flex justify-center pb-4"
+            >
               <div
-                className="transition-transform duration-200 origin-top shadow-2xl rounded-sm"
-                style={{ transform: `scale(${zoomLevel})` }}
+                style={{
+                  width: scaledWidth,
+                  height: scaledHeight,
+                }}
               >
-                <BiodataRenderer
-                  data={data}
-                  showWatermark={showWatermark}
-                />
+                <div
+                  className="origin-top-left shadow-2xl transition-transform duration-200 rounded-sm"
+                  style={{
+                    width: A4_WIDTH,
+                    height: A4_HEIGHT,
+                    transform: `scale(${finalScale})`,
+                  }}
+                >
+                  <BiodataRenderer
+                    data={data}
+                    showWatermark={showWatermark}
+                  />
+                </div>
               </div>
             </div>
           </div>

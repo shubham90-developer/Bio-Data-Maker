@@ -1,6 +1,18 @@
-import React from "react";
+"use client";
+
+import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import { BiodataData } from "@/types/biodata";
-import { FieldRow, DeityHeader, TemplatePhoto } from "../TemplateHelpers";
+
+// SSR-safe layout effect
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+export const SAFE_TOP = 74;
+export const SAFE_BOTTOM = 1050;
+export const SAFE_LEFT = 100;
+export const SAFE_RIGHT = 90;
+export const SAFE_WIDTH = 794 - SAFE_LEFT - SAFE_RIGHT; // 604px
+export const SAFE_HEIGHT = SAFE_BOTTOM - SAFE_TOP; // 976px
 
 export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
   data,
@@ -15,90 +27,270 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
     design,
   } = data;
 
-  const isMarathi = profile.language === "mr";
+  const isMarathi = profile?.language === "mr";
+  const [imgError, setImgError] = useState(false);
+  const [scaleU, setScaleU] = useState<number>(1);
+  const [hiddenFieldKeys, setHiddenFieldKeys] = useState<string[]>([]);
+  const contentRef = useRef<HTMLDivElement>(null);
 
+  // Helper to test if a value is non-empty
+  const hasValue = (val: unknown): boolean => {
+    if (val === undefined || val === null) return false;
+    if (typeof val === "string") return val.trim().length > 0;
+    if (typeof val === "number") return true;
+    return false;
+  };
+
+  // Field row component (2-column layout with 92px label)
   const Row = ({
+    fieldKey,
     label,
     value,
     className = "",
   }: {
+    fieldKey?: string;
     label: string;
     value?: string | number;
     className?: string;
   }) => {
-    if (
-      value === undefined ||
-      value === null ||
-      value === "" ||
-      (typeof value === "string" && value.trim() === "")
-    ) {
-      return null;
-    }
+    if (!hasValue(value)) return null;
+    if (fieldKey && hiddenFieldKeys.includes(fieldKey)) return null;
 
     return (
       <div
-        className={`grid grid-cols-[115px_1fr] gap-2 py-[1.5px] text-[10.5px] leading-[1.35] ${className}`}
+        data-field-key={fieldKey}
+        className={`flex items-start leading-[1.3] py-[calc(var(--u)*1px)] text-[calc(var(--u)*10.5px)] ${className}`}
       >
-        <span className="flex min-w-0 items-start justify-between font-semibold text-[#66161D]">
-          <span>{label}</span>
-          <span className="px-1 text-[#B87A2B]">:</span>
+        <span
+          style={{ width: "calc(var(--u) * 92px)" }}
+          className="shrink-0 font-semibold text-[#66161D] flex items-center justify-between"
+        >
+          <span className="truncate">{label}</span>
+          <span className="px-1 text-[#A07028] font-normal">:</span>
         </span>
-
-        <span className="min-w-0 whitespace-normal break-words font-medium text-[#2E2620]">
+        <span className="flex-1 pl-1 font-medium text-[#2E2620] break-words">
           {value}
         </span>
       </div>
     );
   };
 
-  const Section = ({
+  // Pure CSS Ribbon with double clip-path for 1px gold border and right pointed arrow
+  const RibbonHeader = ({
     title,
-    ribbonSrc,
+    gradient,
     iconSrc,
-    children,
   }: {
     title: string;
-    ribbonSrc: string;
+    gradient: string;
     iconSrc: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="relative mb-2">
-      {/* Ribbon Header with Overlaid Badge — guaranteed non-overlapping flex layout */}
-      <div className="relative z-10 flex h-[34px] items-center">
-        {/* Ribbon Graphic Background */}
-        <img
-          src={ribbonSrc}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 z-10 h-[34px] w-[340px] select-none object-fill"
-        />
-        {/* Circular Icon Badge */}
-        <div className="relative z-20 -ml-0.5 flex h-[36px] w-[36px] shrink-0 items-center justify-center">
+  }) => {
+    return (
+      <div
+        className="relative z-10 flex items-center"
+        style={{ height: "calc(var(--u) * 28px)" }}
+      >
+        {/* Native Square Icon Badge Overlapping on Left */}
+        <div
+          className="relative z-20 -ml-0.5 flex shrink-0 items-center justify-center"
+          style={{
+            width: "calc(var(--u) * 32px)",
+            height: "calc(var(--u) * 32px)",
+          }}
+        >
           <img
             src={iconSrc}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none h-[36px] w-[36px] select-none"
+            className="pointer-events-none h-full w-full select-none object-contain"
           />
         </div>
-        {/* Title Text placed clearly after the icon badge */}
-        <h3 className="font-serifDevanagari relative z-20 pl-2.5 text-[12px] font-bold tracking-wide text-white drop-shadow-xs">
-          {title}
-        </h3>
-      </div>
 
-      {/* Content Box with Faint Watermark Layer */}
-      <div className="relative -mt-[8px] overflow-hidden rounded-[8px] border border-[#BFA26A]/55 bg-[#FFFDF9]/90 px-3.5 pb-2 pt-3 shadow-xs">
+        {/* Arrow Ribbon Bar with 1px Gold Border via Double Clip-Path */}
+        <div
+          className="relative z-10 -ml-1 flex items-center pl-3 pr-6 select-none"
+          style={{
+            height: "calc(var(--u) * 24px)",
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.18))",
+          }}
+        >
+          {/* Outer Layer: Gold Border */}
+          <div
+            className="absolute inset-0 bg-[#C5A059]"
+            style={{
+              clipPath:
+                "polygon(0 0, calc(100% - 9px) 0%, 100% 50%, calc(100% - 9px) 100%, 0 100%)",
+            }}
+          />
+          {/* Inner Layer: Gradient Fill (inset 1px) */}
+          <div
+            className="absolute inset-[1px] right-[1.5px]"
+            style={{
+              background: gradient,
+              clipPath:
+                "polygon(0 0, calc(100% - 9px) 0%, 100% 50%, calc(100% - 9px) 100%, 0 100%)",
+            }}
+          />
+          {/* Ribbon Title */}
+          <span
+            className="relative z-10 font-serifDevanagari font-bold tracking-wide text-white drop-shadow-xs whitespace-nowrap pr-1"
+            style={{ fontSize: "calc(var(--u) * 11px)" }}
+          >
+            {title}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  // Section Box with cream background, 1px gold border, and subtle watermark
+  const Section = ({
+    title,
+    gradient,
+    iconSrc,
+    children,
+    className = "",
+  }: {
+    title: string;
+    gradient: string;
+    iconSrc: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <div className={`relative ${className}`}>
+      <RibbonHeader title={title} gradient={gradient} iconSrc={iconSrc} />
+
+      <div
+        className="relative overflow-hidden rounded-[7px] border border-[#C5A059]/50 bg-[#FFFDF9]/95 shadow-xs"
+        style={{
+          marginTop: "calc(var(--u) * -5px)",
+          paddingTop: "calc(var(--u) * 6px)",
+          paddingBottom: "calc(var(--u) * 6px)",
+          paddingLeft: "calc(var(--u) * 10px)",
+          paddingRight: "calc(var(--u) * 10px)",
+        }}
+      >
         <img
           src="/templates/peacock-royal/section-watermark.png"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute right-2 top-1/2 h-16 w-16 -translate-y-1/2 select-none opacity-15"
+          className="pointer-events-none absolute right-2 bottom-1 select-none opacity-15"
+          style={{ width: "calc(var(--u) * 56px)", height: "auto" }}
         />
         <div className="relative z-10">{children}</div>
       </div>
     </div>
   );
+
+  // Count filled rows to determine if data is sparse
+  const filledCount = [
+    personal.fullName,
+    personal.dob,
+    personal.birthTime,
+    personal.birthPlace,
+    personal.height,
+    personal.weight,
+    personal.bloodGroup,
+    personal.religion || personal.caste,
+    personal.gotra,
+    personal.maritalStatus,
+    education.highestEducation,
+    education.college,
+    education.occupation,
+    education.designation,
+    education.companyName,
+    education.annualIncome,
+    family.fatherName,
+    family.fatherOccupation,
+    family.motherName,
+    family.brotherCount,
+    family.sisterCount,
+    family.nativePlace,
+    contact.contactPerson,
+    contact.phone1,
+    contact.residentialAddress,
+  ].filter(hasValue).length;
+
+  const isSparse = filledCount < 16;
+
+  // STEP 4: Auto-Fit Algorithm
+  useIsomorphicLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    const runAutoFit = () => {
+      const lowPriorityList = [
+        "skills",
+        "languagesKnown",
+        "hobbies",
+        "interests",
+        "otherInformation",
+        "relativeSurnames",
+      ];
+
+      // 1. Reset all low-priority fields to visible
+      lowPriorityList.forEach((key) => {
+        const domNode = el.querySelector(
+          `[data-field-key="${key}"]`,
+        ) as HTMLElement | null;
+        if (domNode) domNode.style.display = "";
+      });
+
+      // 2. Start at --u = 1.0
+      let u = 1.0;
+      el.style.setProperty("--u", "1");
+
+      // 3. Loop reducing --u by 0.02 down to 0.72 while overflowing SAFE_HEIGHT
+      let iterations = 0;
+      while (el.scrollHeight > SAFE_HEIGHT + 1 && u > 0.72 && iterations < 20) {
+        u = Math.max(0.72, +(u - 0.02).toFixed(3));
+        el.style.setProperty("--u", u.toString());
+        iterations++;
+      }
+
+      // 4. If it still overflows at --u = 0.72, hide low priority rows in order
+      const newlyHidden: string[] = [];
+      if (el.scrollHeight > SAFE_HEIGHT + 1) {
+        for (const key of lowPriorityList) {
+          if (el.scrollHeight <= SAFE_HEIGHT + 1) break;
+          const domNode = el.querySelector(
+            `[data-field-key="${key}"]`,
+          ) as HTMLElement | null;
+          if (domNode && domNode.style.display !== "none") {
+            domNode.style.display = "none";
+            newlyHidden.push(key);
+            if (process.env.NODE_ENV !== "production") {
+              console.warn(
+                `[ClassicIvory AutoFit] Hid row '${key}' to prevent page overflow.`,
+              );
+            }
+          }
+        }
+      }
+
+      // 5. Synchronize state without unnecessary renders
+      setScaleU((prev) => (Math.abs(prev - u) > 0.001 ? u : prev));
+      setHiddenFieldKeys((prev) => {
+        if (
+          prev.length === newlyHidden.length &&
+          prev.every((k, i) => k === newlyHidden[i])
+        ) {
+          return prev;
+        }
+        return newlyHidden;
+      });
+    };
+
+    if (
+      typeof document !== "undefined" &&
+      document.fonts &&
+      document.fonts.ready
+    ) {
+      document.fonts.ready.then(runAutoFit);
+    } else {
+      runAutoFit();
+    }
+  }, [data]);
 
   const candidateName =
     personal.fullName || (isMarathi ? "शुभम यादव" : "Shubham Yadav");
@@ -116,120 +308,220 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
         backgroundColor: "#FBF8EF",
       }}
     >
-      {/* 1. Full Top Arch Border — fixed height so it sits above content */}
+      {/* 1. Full-page A4 Frame Border with Transparent Center (on top with pointer-events-none) */}
       <img
-        src="/templates/peacock-royal/top-arch-border.png"
+        src="/templates/peacock-royal/page-frame.png"
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-20 h-[70px] w-full select-none object-fill"
+        className="pointer-events-none absolute inset-0 z-20 h-full w-full select-none"
       />
 
-      {/* 2. Full-Height Left Vertical Side Panel */}
-      <img
-        src="/templates/peacock-royal/side-panel-left.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-0 top-0 z-20 h-full w-[64px] select-none object-fill"
-      />
-
-      {/* 3. Full-Height Right Vertical Side Panel */}
-      <img
-        src="/templates/peacock-royal/side-panel-right.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 right-0 top-0 z-20 h-full w-[50px] select-none object-fill"
-      />
-
-      {/* Main Content Area — pushed down to sit clearly below the top arch */}
-      <div className="relative z-10 flex h-full flex-col justify-between pb-3 pl-[72px] pr-[58px] pt-[74px]">
+      {/* 2. ONE Absolutely Positioned Content Wrapper at the Measured SAFE RECT */}
+      <div
+        ref={contentRef}
+        style={
+          {
+            position: "absolute",
+            top: `${SAFE_TOP}px`,
+            left: `${SAFE_LEFT}px`,
+            width: `${SAFE_WIDTH}px`,
+            height: `${SAFE_HEIGHT}px`,
+            "--u": scaleU.toString(),
+          } as React.CSSProperties
+        }
+        className="z-10 flex flex-col justify-between overflow-hidden"
+      >
+        {/* TOP HEADER: Deity Line + 3-Column Profile Row (max ~150px total) */}
         <div>
-          {/* Top Deity Line */}
+          {/* Deity Line: at the very top of SAFE RECT (strictly below top lotus ornament at y=64px) */}
           <div className="text-center">
-            <p className="font-serifDevanagari text-[12.5px] font-semibold tracking-[0.2em] text-[#66161D]">
-              {profile.deityName || "॥ श्री गणेशाय नमः ॥"}
+            <p
+              className="font-serifDevanagari font-bold tracking-[0.2em] text-[#66161D]"
+              style={{ fontSize: "calc(var(--u) * 12px)" }}
+            >
+              {profile?.deityName || "॥ श्री गणेशाय नमः ॥"}
             </p>
           </div>
 
-          {/* Header Row: Ganesh Shloka + Candidate Title/BIODATA + Photo Frame */}
-          <div className="mt-1 flex items-center justify-between gap-3 border-b border-[#BFA26A]/35 pb-2.5">
-            {/* Left Column: Shloka */}
-            <div className="w-[135px] shrink-0 text-center font-serifDevanagari text-[9.5px] font-medium leading-[1.35] text-[#66161D]">
-              <p>वक्रतुंड महाकाय</p>
-              <p>सूर्यकोटि समप्रभ ।</p>
-              <p>निर्विघ्नं कुरु मे देव</p>
-              <p>सर्वकार्येषु सर्वदा ॥</p>
+          {/* 3-Column Header Row */}
+          <div
+            className="flex items-center justify-between gap-2 border-b border-[#BFA26A]/35"
+            style={{
+              marginTop: "calc(var(--u) * 1px)",
+              paddingBottom: "calc(var(--u) * 5px)",
+            }}
+          >
+            {/* Left: Ganesh icon 80px wide with 4-line Sanskrit shloka (9px text) */}
+            <div
+              className="shrink-0 text-center flex flex-col items-center"
+              style={{ width: "calc(var(--u) * 88px)" }}
+            >
+              <img
+                src="/templates/peacock-royal/ganesh-icon.png"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none select-none object-contain"
+                style={{
+                  width: "calc(var(--u) * 80px)",
+                  height: "auto",
+                  maxHeight: "calc(var(--u) * 74px)",
+                }}
+              />
+              <div
+                className="font-serifDevanagari font-semibold leading-[1.3] text-[#66161D]"
+                style={{
+                  fontSize: "calc(var(--u) * 9px)",
+                  marginTop: "calc(var(--u) * 1.5px)",
+                }}
+              >
+                <p>वक्रतुंड महाकाय</p>
+                <p>सूर्यकोटि समप्रभ ।</p>
+                <p>निर्विघ्नं कुरु मे देव</p>
+                <p>सर्वकार्येषु सर्वदा ॥</p>
+              </div>
             </div>
 
-            {/* Middle Column: Candidate Name & BIODATA with Divider */}
-            <div className="min-w-0 flex-1 text-center">
-              <h1 className="font-serifDevanagari text-[28px] font-bold leading-tight tracking-wide text-[#0D4B55]">
+            {/* Center: Candidate Name (30px), Profession, BIODATA */}
+            <div className="min-w-0 flex-1 text-center px-1">
+              <h1
+                className="font-serifDevanagari font-bold leading-tight tracking-wide text-[#0D4B55]"
+                style={{ fontSize: "calc(var(--u) * 30px)" }}
+              >
                 {candidateName}
               </h1>
 
-              <p className="mt-0.5 text-[12px] font-bold uppercase tracking-[0.25em] text-[#B87A2B]">
+              <p
+                className="font-bold uppercase text-[#A07028]"
+                style={{
+                  fontSize: "calc(var(--u) * 11px)",
+                  letterSpacing: "0.22em",
+                  marginTop: "calc(var(--u) * 2px)",
+                }}
+              >
                 {candidateProfession}
               </p>
 
-              <div className="mt-1 flex items-center justify-center gap-2">
-                <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#B87A2B]" />
-                <span className="text-[10px] font-bold tracking-[0.3em] text-[#66161D]">
-                  {profile.biodataTitle || "BIODATA"}
+              <div
+                className="flex items-center justify-center gap-2"
+                style={{ marginTop: "calc(var(--u) * 3px)" }}
+              >
+                <span
+                  className="h-px bg-gradient-to-r from-transparent to-[#B87A2B]"
+                  style={{ width: "calc(var(--u) * 28px)" }}
+                />
+                <span
+                  className="font-bold text-[#66161D]"
+                  style={{
+                    fontSize: "calc(var(--u) * 10px)",
+                    letterSpacing: "0.25em",
+                  }}
+                >
+                  {profile?.biodataTitle || "BIODATA"}
                 </span>
-                <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#B87A2B]" />
+                <span
+                  className="h-px bg-gradient-to-l from-transparent to-[#B87A2B]"
+                  style={{ width: "calc(var(--u) * 28px)" }}
+                />
               </div>
 
-              {/* Divider ornament under BIODATA */}
-              <div className="mt-0.5 flex justify-center">
+              {/* Divider ornament */}
+              <div
+                className="flex justify-center"
+                style={{ marginTop: "calc(var(--u) * 2px)" }}
+              >
                 <img
                   src="/templates/peacock-royal/divider-ornament.png"
                   alt=""
                   aria-hidden="true"
-                  className="pointer-events-none h-[11px] w-auto max-w-[220px] select-none opacity-90"
+                  className="pointer-events-none select-none opacity-85"
+                  style={{
+                    height: "calc(var(--u) * 9px)",
+                    width: "auto",
+                    maxWidth: "calc(var(--u) * 175px)",
+                  }}
                 />
               </div>
             </div>
 
-            {/* Right Column: Photo Frame with Properly Proportioned Dimensions */}
-            {design?.showPhoto ? (
-              <div className="flex w-[135px] shrink-0 flex-col items-center">
-                <div className="relative rounded-[7px] border-[2px] border-[#BFA26A] bg-white p-[3px] shadow-[0_3px_10px_rgba(102,22,29,0.18)]">
-                  <div className="h-[135px] w-[105px] overflow-hidden rounded-[4px]">
-                    {profile.photoUrl ? (
+            {/* Right: Photo Frame 92x118 & Tagline */}
+            {design?.showPhoto !== false ? (
+              <div
+                className="shrink-0 flex flex-col items-center"
+                style={{ width: "calc(var(--u) * 96px)" }}
+              >
+                <div
+                  className="relative rounded-[6px] border-[2px] border-[#C5A059] bg-white shadow-[0_3px_10px_rgba(102,22,29,0.18)]"
+                  style={{ padding: "calc(var(--u) * 2.5px)" }}
+                >
+                  <div
+                    className="overflow-hidden rounded-[3px] bg-[#F4EFE6]"
+                    style={{
+                      width: "calc(var(--u) * 92px)",
+                      height: "calc(var(--u) * 118px)",
+                    }}
+                  >
+                    {profile?.photoUrl && !imgError ? (
                       <img
                         src={profile.photoUrl}
                         alt="Candidate"
+                        onError={() => setImgError(true)}
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center bg-[#F4EFE6] text-[#66161D]/60">
-                        <span className="text-2xl">👤</span>
-                        <span className="mt-1 text-[9.5px] font-semibold text-[#66161D]">
+                      <div className="flex h-full w-full flex-col items-center justify-center text-[#66161D]/60">
+                        <span className="text-xl">👤</span>
+                        <span
+                          className="font-semibold text-[#66161D]"
+                          style={{
+                            fontSize: "calc(var(--u) * 9px)",
+                            marginTop: "calc(var(--u) * 2px)",
+                          }}
+                        >
                           {isMarathi ? "फोटो" : "Photo"}
                         </span>
                       </div>
                     )}
                   </div>
                 </div>
-                <span className="mt-0.5 font-serif text-[9px] italic text-[#B87A2B]">
-                  Good Vibes, Better Future
-                </span>
+                <div
+                  className="text-center font-serif italic text-[#8C6226]"
+                  style={{
+                    fontSize: "calc(var(--u) * 9.5px)",
+                    lineHeight: "1.2",
+                    marginTop: "calc(var(--u) * 2px)",
+                  }}
+                >
+                  <p>&ldquo;Good Vibes</p>
+                  <p>Better Future&rdquo;</p>
+                </div>
               </div>
             ) : (
-              <div className="w-[135px] shrink-0" />
+              <div
+                className="shrink-0"
+                style={{ width: "calc(var(--u) * 96px)" }}
+              />
             )}
           </div>
+        </div>
 
-          {/* 1. Personal Details (Maroon Ribbon) */}
+        {/* SECTIONS CONTAINER: 2-column grid inside every section, with 5px gap */}
+        <div
+          className={`flex flex-col ${
+            isSparse ? "justify-around flex-1 py-1" : ""
+          }`}
+          style={!isSparse ? { gap: "calc(var(--u) * 5px)" } : undefined}
+        >
+          {/* 1. Personal Details (Maroon Ribbon #7A1622) */}
           <Section
             title={
               isMarathi
                 ? "व्यक्तिगत जानकारी  |  Personal Details"
                 : "Personal Details"
             }
-            ribbonSrc="/templates/peacock-royal/section-ribbon-maroon.png"
+            gradient="linear-gradient(90deg, #60101B 0%, #7A1622 50%, #8E1B29 100%)"
             iconSrc="/templates/peacock-royal/icon-personal.png"
           >
-            <div className="grid grid-cols-2 gap-x-5">
+            <div className="grid grid-cols-2 gap-x-3">
               <Row
                 label={isMarathi ? "पूरा नाम" : "Full Name"}
                 value={personal.fullName}
@@ -283,7 +575,7 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
             </div>
           </Section>
 
-          {/* 2. Horoscope & Astrology (Teal Ribbon) */}
+          {/* 2. Horoscope & Astrology (Teal Ribbon #0F5C55) */}
           {design?.showAstrology && (
             <Section
               title={
@@ -291,10 +583,10 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
                   ? "ज्योतिष माहिती  |  Horoscope & Astrology"
                   : "Horoscope & Astrology"
               }
-              ribbonSrc="/templates/peacock-royal/section-ribbon-teal.png"
+              gradient="linear-gradient(90deg, #093D38 0%, #0F5C55 50%, #15736B 100%)"
               iconSrc="/templates/peacock-royal/icon-astrology.png"
             >
-              <div className="grid grid-cols-2 gap-x-5">
+              <div className="grid grid-cols-2 gap-x-3">
                 <Row
                   label={isMarathi ? "राशी" : "Rashi"}
                   value={personal.rashi}
@@ -320,17 +612,17 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
             </Section>
           )}
 
-          {/* 3. Education & Career (Blue Ribbon) */}
+          {/* 3. Education & Career (Blue Ribbon #143F8C) */}
           <Section
             title={
               isMarathi
                 ? "शिक्षण व नोकरी  |  Education & Career"
                 : "Education & Career"
             }
-            ribbonSrc="/templates/peacock-royal/section-ribbon-blue.png"
+            gradient="linear-gradient(90deg, #0D2C63 0%, #143F8C 50%, #1D54B8 100%)"
             iconSrc="/templates/peacock-royal/icon-education.png"
           >
-            <div className="grid grid-cols-2 gap-x-5">
+            <div className="grid grid-cols-2 gap-x-3">
               <Row
                 label={isMarathi ? "उच्च शिक्षण" : "Highest Education"}
                 value={education.highestEducation}
@@ -356,7 +648,7 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
                 value={education.companyName}
               />
               <Row
-                label={isMarathi ? "कामाचे ठिकाण" : "Work Location"}
+                label={isMarathi ? "नोकरीचे ठिकाण" : "Work Location"}
                 value={education.workLocation}
               />
               <Row
@@ -368,26 +660,39 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
                 value={education.experienceYears}
               />
               <Row
-                label={isMarathi ? "कौशल्ये" : "Skills"}
-                value={education.skills}
-              />
-              <Row
+                fieldKey="languagesKnown"
                 label={isMarathi ? "अवगत भाषा" : "Languages Known"}
                 value={education.languagesKnown}
+              />
+              <Row
+                fieldKey="skills"
+                className="col-span-2"
+                label={isMarathi ? "कौशल्ये" : "Skills"}
+                value={education.skills}
               />
             </div>
           </Section>
 
-          {/* 4. Expectations (Purple Ribbon) */}
+          {/* 4. Expectations (Purple Ribbon #5A1F73) */}
           {design?.showExpectations && (
             <Section
-              title={
-                isMarathi ? "अपेक्षा  |  Expectations" : "Expectations"
-              }
-              ribbonSrc="/templates/peacock-royal/section-ribbon-purple.png"
+              title={isMarathi ? "अपेक्षा  |  Expectations" : "Expectations"}
+              gradient="linear-gradient(90deg, #3D134E 0%, #5A1F73 50%, #752796 100%)"
               iconSrc="/templates/peacock-royal/icon-expectations.png"
             >
-              <div className="grid grid-cols-2 gap-x-5">
+              <div className="grid grid-cols-2 gap-x-3">
+                <Row
+                  label={isMarathi ? "अपेक्षित शिक्षण" : "Preferred Education"}
+                  value={expectations.preferredEducation}
+                />
+                <Row
+                  label={isMarathi ? "व्यवसाय" : "Preferred Occupation"}
+                  value={expectations.preferredOccupation}
+                />
+                <Row
+                  label={isMarathi ? "ठिकाण" : "Preferred Location"}
+                  value={expectations.preferredLocation}
+                />
                 <Row
                   label={isMarathi ? "अपेक्षित वय" : "Preferred Age"}
                   value={
@@ -405,19 +710,11 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
                   value={expectations.preferredHeightMin}
                 />
                 <Row
-                  label={isMarathi ? "अपेक्षित शिक्षण" : "Preferred Education"}
-                  value={expectations.preferredEducation}
-                />
-                <Row
-                  label={isMarathi ? "अपेक्षित व्यवसाय" : "Preferred Occupation"}
-                  value={expectations.preferredOccupation}
-                />
-                <Row
-                  label={isMarathi ? "अपेक्षित ठिकाण" : "Preferred Location"}
-                  value={expectations.preferredLocation}
-                />
-                <Row
-                  label={isMarathi ? "अपेक्षित वैवाहिक स्थिती" : "Marital Status Expected"}
+                  label={
+                    isMarathi
+                      ? "अपेक्षित वैवाहिक स्थिती"
+                      : "Marital Status Expected"
+                  }
                   value={expectations.maritalStatusExpected}
                 />
                 <Row
@@ -433,37 +730,43 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
                   value={expectations.drinking}
                 />
                 <Row
+                  fieldKey="hobbies"
                   label={isMarathi ? "छंद" : "Hobbies"}
                   value={expectations.hobbies}
                 />
                 <Row
+                  fieldKey="interests"
                   label={isMarathi ? "आवड" : "Interests"}
                   value={expectations.interests}
-                />
-                <Row
-                  label={isMarathi ? "इतर माहिती" : "Other Info"}
-                  value={expectations.otherInformation}
                 />
                 <Row
                   className="col-span-2"
                   label={isMarathi ? "इतर अपेक्षा" : "Partner Expectations"}
                   value={expectations.partnerExpectations}
                 />
+                <Row
+                  fieldKey="otherInformation"
+                  className="col-span-2"
+                  label={isMarathi ? "इतर माहिती" : "Other Info"}
+                  value={expectations.otherInformation}
+                />
               </div>
             </Section>
           )}
 
-          {/* 5. Family Details (Orange Ribbon) */}
+          {/* 5. Family Details (Orange-Brown Ribbon #A64A12) */}
+          {/* Extra left margin (ml-2) so it stays clear of the peacock crest/body */}
           <Section
             title={
               isMarathi
                 ? "कौटुंबिक माहिती  |  Family Details"
                 : "Family Details"
             }
-            ribbonSrc="/templates/peacock-royal/section-ribbon-orange.png"
+            gradient="linear-gradient(90deg, #7A330A 0%, #A64A12 50%, #C45716 100%)"
             iconSrc="/templates/peacock-royal/icon-family.png"
+            className="ml-[calc(var(--u)*8px)]"
           >
-            <div className="grid grid-cols-2 gap-x-5">
+            <div className="grid grid-cols-2 gap-x-3">
               <Row
                 label={isMarathi ? "वडिलांचे नाव" : "Father's Name"}
                 value={family.fatherName}
@@ -521,6 +824,7 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
                 value={family.maternalUnclePlace}
               />
               <Row
+                fieldKey="relativeSurnames"
                 className="col-span-2"
                 label={isMarathi ? "नातेसंबंधांची आडनावे" : "Relative Surnames"}
                 value={family.relativeSurnames}
@@ -528,27 +832,29 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
             </div>
           </Section>
 
-          {/* 6. Contact Details (Red Ribbon) */}
+          {/* 6. Contact Details (Red Ribbon #8F1A24) */}
+          {/* Extra left margin (ml-3) and right margin (mr-3) to steer clear of peacock & lotus */}
           <Section
             title={
               isMarathi
                 ? "संपर्क माहिती  |  Contact Details"
                 : "Contact Details"
             }
-            ribbonSrc="/templates/peacock-royal/section-ribbon-red.png"
+            gradient="linear-gradient(90deg, #6B1119 0%, #8F1A24 50%, #AB1E2C 100%)"
             iconSrc="/templates/peacock-royal/icon-contact.png"
+            className="ml-[calc(var(--u)*12px)] mr-[calc(var(--u)*12px)]"
           >
-            <div className="grid grid-cols-2 gap-x-5">
+            <div className="grid grid-cols-2 gap-x-3">
               <Row
                 label={isMarathi ? "संपर्क व्यक्ती" : "Contact Person"}
                 value={contact.contactPerson}
               />
               <Row
-                label={isMarathi ? "मोबाईल १" : "Mobile 1"}
+                label={isMarathi ? "मोबाईल 1" : "Mobile 1"}
                 value={contact.phone1}
               />
               <Row
-                label={isMarathi ? "मोबाईल २" : "Mobile 2"}
+                label={isMarathi ? "मोबाईल 2" : "Mobile 2"}
                 value={contact.phone2}
               />
               <Row label={isMarathi ? "ईमेल" : "Email"} value={contact.email} />
@@ -561,17 +867,15 @@ export const ClassicIvoryTemplate: React.FC<{ data: BiodataData }> = ({
           </Section>
         </div>
 
-        {/* Footer Area: Divider Ornament + Auspicious Blessing */}
-        <div className="pb-1 text-center">
-          <div className="mb-1 flex justify-center">
-            <img
-              src="/templates/peacock-royal/divider-ornament.png"
-              alt=""
-              aria-hidden="true"
-              className="pointer-events-none h-[13px] w-auto max-w-[280px] select-none opacity-90"
-            />
-          </div>
-          <p className="font-serifDevanagari text-[11.5px] font-semibold tracking-[0.16em] text-[#66161D]">
+        {/* FOOTER: Auspicious Blessing Shloka at the bottom of SAFE RECT (above bottom ornament) */}
+        <div className="mt-auto text-center pt-1 pb-0.5">
+          <p
+            className="font-serifDevanagari font-bold text-[#66161D]"
+            style={{
+              fontSize: "calc(var(--u) * 11px)",
+              letterSpacing: "0.16em",
+            }}
+          >
             || सर्वे भवन्तु सुखिनः सर्वे सन्तु निरामयाः ||
           </p>
         </div>
