@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FDFBF7;
+  --foreground: #1F2937;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), var(--font-noto-devanagari), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F4ECDD;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C5A059;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #722F37;
+}
+
+/* Subtle Indian Gold Shimmer Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(197, 160, 89, 0.1) 0%,
+    rgba(197, 160, 89, 0.3) 50%,
+    rgba(197, 160, 89, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* A4 Printable Document Layout */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  header,
+  footer,
+  .no-print,
+  button,
+  .non-printable {
+    display: none !important;
+  }
+
+  .print-page {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-after: always;
+  }
+}
+
+/* Watermark Pattern */
+.preview-watermark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(114, 47, 55, 0.04) 0px,
+    rgba(114, 47, 55, 0.04) 30px,
+    transparent 30px,
+    transparent 70px
+  );
+}
+
+.preview-watermark-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-35deg);
+  font-size: 5rem;
+  font-weight: 800;
+  color: rgba(114, 47, 55, 0.08);
+  pointer-events: none;
+  white-space: nowrap;
+  user-select: none;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
