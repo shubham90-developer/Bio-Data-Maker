@@ -124,6 +124,53 @@ export const GoldFiligreeTemplate: React.FC<{ data: BiodataData }> = ({
     );
   };
 
+  /**
+   * FIX: used for the two-column paired sections (Family Details,
+   * Astrology). Previously these wrapped a full <Row/> (fixed
+   * 112px label + value) as a single grid item inside grid-cols-2,
+   * which only left ~40-50px for the value — causing text to wrap
+   * character-by-character. RowCell instead emits the label and
+   * value as separate grid cells so the parent's
+   * grid-cols-[max-content_1fr_max-content_1fr] can size the label
+   * to its content and give the value the rest of the space.
+   * Empty values render as blank cells (instead of Row's `null`)
+   * so column pairing never shifts out of alignment.
+   */
+  const RowCell = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value?: string | number;
+  }) => {
+    if (
+      value === undefined ||
+      value === null ||
+      value === "" ||
+      value === "0" ||
+      value === "०"
+    ) {
+      return (
+        <>
+          <span />
+          <span />
+        </>
+      );
+    }
+
+    return (
+      <>
+        <span className="flex items-start gap-1 whitespace-nowrap py-[1px] text-[11px] font-medium leading-[1.3] text-[#5B4324]">
+          {label}
+          <span className="text-[#9A762F]">:</span>
+        </span>
+        <span className="min-w-0 break-words py-[1px] pl-1 text-[11px] font-medium leading-[1.3] text-[#4B3922]">
+          {value}
+        </span>
+      </>
+    );
+  };
+
   const Section = ({
     title,
     icon,
@@ -233,47 +280,61 @@ export const GoldFiligreeTemplate: React.FC<{ data: BiodataData }> = ({
     </>
   );
 
+  // FIX: was `grid grid-cols-2 gap-x-5` wrapping full <Row/> items —
+  // each column only had ~160px, leaving the value almost no room
+  // and causing character-by-character wrapping. Now uses RowCell
+  // in a grid-cols-[max-content_1fr_max-content_1fr] track so labels
+  // size to content and values share the remaining width.
   const familyDetails = (
-    <div className="grid grid-cols-2 gap-x-5">
-      <Row
+    <div className="grid grid-cols-[max-content_1fr_max-content_1fr] items-start gap-x-3 gap-y-[2px]">
+      <RowCell
         label={isMarathi ? "वडिलांचे नाव" : "Father's Name"}
         value={family.fatherName}
       />
-      <Row
+      <RowCell
         label={isMarathi ? "वडिलांचा व्यवसाय" : "Father's Work"}
         value={family.fatherOccupation}
       />
-      <Row
+      <RowCell
         label={isMarathi ? "आईचे नाव" : "Mother's Name"}
         value={family.motherName}
       />
-      <Row
+      <RowCell
         label={isMarathi ? "आईचा व्यवसाय" : "Mother's Work"}
         value={family.motherOccupation}
       />
-      <Row label={isMarathi ? "भाऊ" : "Brothers"} value={family.brotherCount} />
-      <Row label={isMarathi ? "बहीण" : "Sisters"} value={family.sisterCount} />
-      <Row
+      <RowCell
+        label={isMarathi ? "भाऊ" : "Brothers"}
+        value={family.brotherCount}
+      />
+      <RowCell
+        label={isMarathi ? "बहीण" : "Sisters"}
+        value={family.sisterCount}
+      />
+      <RowCell
         label={isMarathi ? "मूळ गाव" : "Native Place"}
         value={family.nativePlace}
       />
-      <Row
+      <RowCell
         label={isMarathi ? "सध्याचे ठिकाण" : "Current City"}
         value={family.familyLocation}
       />
-      <Row
+      <RowCell
         label={isMarathi ? "मामांचे नाव" : "Maternal Uncle"}
         value={family.maternalUncleName}
       />
-      <Row
+      <RowCell
         label={isMarathi ? "मामांचे गाव" : "Uncle's City"}
         value={family.maternalUnclePlace}
       />
-      <Row
-        className="col-span-2"
-        label={isMarathi ? "नातेवाईकांची आडनावे" : "Relative Surnames"}
-        value={family.relativeSurnames}
-      />
+      {family.relativeSurnames ? (
+        <div className="col-span-4">
+          <Row
+            label={isMarathi ? "नातेवाईकांची आडनावे" : "Relative Surnames"}
+            value={family.relativeSurnames}
+          />
+        </div>
+      ) : null}
     </div>
   );
 
@@ -522,28 +583,31 @@ export const GoldFiligreeTemplate: React.FC<{ data: BiodataData }> = ({
                   }
                   icon={SectionIcon("astrology-badge")}
                 >
-                  <div className="grid grid-cols-2 gap-x-4">
-                    <Row
+                  {/* FIX: same grid-cols-2-wrapping-Row bug as Family
+                      Details above — replaced with RowCell in a
+                      max-content/1fr track. */}
+                  <div className="grid grid-cols-[max-content_1fr_max-content_1fr] items-start gap-x-3 gap-y-[2px]">
+                    <RowCell
                       label={isMarathi ? "राशी" : "Rashi"}
                       value={personal.rashi}
                     />
-                    <Row
+                    <RowCell
                       label={isMarathi ? "नक्षत्र" : "Nakshatra"}
                       value={personal.nakshatra}
                     />
-                    <Row
+                    <RowCell
                       label={isMarathi ? "चरण" : "Charan"}
                       value={personal.charan}
                     />
-                    <Row
+                    <RowCell
                       label={isMarathi ? "नाडी" : "Nadi"}
                       value={personal.nadi}
                     />
-                    <Row
+                    <RowCell
                       label={isMarathi ? "गण" : "Gan"}
                       value={personal.gan}
                     />
-                    <Row
+                    <RowCell
                       label={isMarathi ? "मंगळ" : "Manglik"}
                       value={personal.manglik}
                     />

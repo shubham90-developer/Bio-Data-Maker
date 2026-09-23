@@ -1,165 +1,479 @@
 import React from "react";
 import { BiodataData } from "@/types/biodata";
-import { FieldRow, DeityHeader, TemplatePhoto } from "../TemplateHelpers";
+import { TemplatePhoto } from "../TemplateHelpers";
 
-export const ModernBurgundyTemplate: React.FC<{ data: BiodataData }> = ({ data }) => {
-  const { profile, personal, education, family, expectations, contact, design } = data;
+/**
+ * ModernBurgundyTemplate
+ * Mirrors the structural pattern of RoyalMaroonTemplate (Row / Section
+ * helpers, same data destructuring, same design.show* flags) but is
+ * styled after the cream-background / maroon-icon-badge / gold-leaf
+ * design shown in the reference screenshot, using the asset paths
+ * from your `modern-burgundy-2` and `minimal-editorial` folders.
+ *
+ * ASSUMPTIONS (please adjust to your actual BiodataData shape):
+ * - personal.age and personal.motherTongue exist. If not, either add
+ *   them to your BiodataData type, or replace/remove the corresponding
+ *   <StatPill> / <Row> lines below.
+ * - There's no dedicated "star" icon for Horoscope & Astrology in your
+ *   minimal-editorial folder, so it reuses icon-religion.png — swap in
+ *   a dedicated icon if you add one later.
+ * - "Additional Note" (icon-envelope.png) is left out since it's not
+ *   part of the current BiodataData interface used by RoyalMaroonTemplate;
+ *   add a `personal.additionalNote` field (or similar) and uncomment
+ *   the block near the bottom if you want that section.
+ */
+export const ModernBurgundyTemplate: React.FC<{ data: BiodataData }> = ({
+  data,
+}) => {
+  const {
+    profile,
+    personal,
+    education,
+    family,
+    expectations,
+    contact,
+    design,
+  } = data;
+
   const isMarathi = profile.language === "mr";
-  const primaryBurgundy = "#721124";
-  const accentGold = "#C5A059";
+
+  const maroon = "#7A1B2B";
+  const gold = "#C9A24B";
+
+  /**
+   * Field row for the light/cream background.
+   * Mirrors RoyalMaroonTemplate's Row but with a dark-on-cream palette
+   * instead of gold-on-maroon.
+   */
+  const Row = ({
+    label,
+    value,
+    className = "",
+  }: {
+    label: string;
+    value?: string | number;
+    className?: string;
+  }) => {
+    if (
+      value === undefined ||
+      value === null ||
+      value === "" ||
+      value === "0" ||
+      value === "०"
+    ) {
+      return null;
+    }
+
+    return (
+      <div
+        className={`flex items-start text-[13px] leading-snug py-[1px] ${className}`}
+      >
+        <span className="w-40 shrink-0 font-medium text-[#7A1B2B]">
+          {label}
+        </span>
+        <span className="mx-1 text-[#C9A24B]">:</span>
+        <span className="flex-1 pl-1 break-words font-medium text-[#2E2A26]">
+          {value}
+        </span>
+      </div>
+    );
+  };
+
+  // NOTE: the icon-*.png assets in minimal-editorial are already complete
+  // circle badges (maroon circle + white glyph baked in). Render them as-is —
+  // do NOT wrap in another circle or apply an invert filter.
+  const SectionIcon = ({ src }: { src: string }) => (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      className="h-7 w-7 shrink-0 select-none object-contain"
+    />
+  );
+
+  const Section = ({
+    title,
+    icon,
+    children,
+    className = "",
+  }: {
+    title: string;
+    icon: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <section className={className}>
+      <div className="mb-1.5 flex items-center gap-2.5 border-b border-[#C9A24B]/40 pb-1.5">
+        <SectionIcon src={icon} />
+        <h3 className="font-serif text-sm font-bold uppercase tracking-[0.12em] text-[#7A1B2B]">
+          {title}
+        </h3>
+      </div>
+      {children}
+    </section>
+  );
+
+  const StatPill = ({
+    icon,
+    label,
+    value,
+  }: {
+    icon: string;
+    label: string;
+    value?: string | number;
+  }) => {
+    if (value === undefined || value === null || value === "") return null;
+    return (
+      <div className="flex items-center gap-2">
+        <img
+          src={icon}
+          alt=""
+          aria-hidden="true"
+          className="h-6 w-6 shrink-0 select-none object-contain"
+        />
+        <div className="leading-tight">
+          <p className="text-[10px] uppercase tracking-wide text-[#8A7F6B]">
+            {label}
+          </p>
+          <p className="text-sm font-semibold text-[#2E2A26]">{value}</p>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="relative w-full max-w-[794px] min-h-[1123px] bg-[#FCFAF7] text-[#261E1F] p-8 sm:p-12 shadow-2xl mx-auto border border-[#E5DDD0] print:shadow-none font-serif select-none overflow-hidden">
-      {/* Modern Architectural Corner Blocks */}
-      {/* Top Left Burgundy Geometric Flourish */}
-      <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none">
-        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-          <path d="M0 0 L100 0 C70 0 50 20 50 50 C50 80 30 100 0 100 Z" fill="#721124" />
-          <path d="M0 0 L90 0 C65 0 45 18 45 45 C45 72 27 90 0 90 Z" fill="#580C19" />
-          <circle cx="25" cy="25" r="4" fill="#C5A059" />
-        </svg>
-      </div>
+    <div
+      className="relative mx-auto min-h-[1123px] w-[794px] bg-[#FAF6EE] px-10 py-8 text-[#2E2A26] shadow-2xl print:shadow-none"
+      style={{
+        backgroundImage: "url(/templates/modern-burgundy-2/bg-image.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact",
+      }}
+    >
+      {/*
+        Only ONE frame source: bg-image.png already carries the maroon
+        corner flourishes (see its thumbnail — cream page with dark
+        corner accents baked in). Layering outer-border.png on top of
+        it at full-bleed size is what caused the clashing/odd corners
+        you saw. Re-add outer-border.png only if you drop bg-image's
+        corner art, not alongside it.
+      */}
 
-      {/* Bottom Right Burgundy Geometric Flourish */}
-      <div className="absolute bottom-0 right-0 w-24 h-24 pointer-events-none transform rotate-180">
-        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-          <path d="M0 0 L100 0 C70 0 50 20 50 50 C50 80 30 100 0 100 Z" fill="#721124" />
-          <path d="M0 0 L90 0 C65 0 45 18 45 45 C45 72 27 90 0 90 Z" fill="#580C19" />
-          <circle cx="25" cy="25" r="4" fill="#C5A059" />
-        </svg>
-      </div>
+      {/* Corner leaf ornaments — top corners only, matching the reference */}
+      <img
+        src="/templates/minimal-editorial/corner-leaf-top-left.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 z-0 w-16 select-none"
+      />
+      <img
+        src="/templates/minimal-editorial/corner-leaf-top-right.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute right-0 top-0 z-0 w-16 select-none"
+      />
 
-      {/* Thin Gold Hairline Framing Rule */}
-      <div className="absolute inset-4 border border-[#721124]/20 pointer-events-none" />
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Header: eyebrow + name + title + quick stats, photo alongside */}
+        <div className="flex items-start gap-5 border-b border-[#C9A24B]/40 pb-3">
+          {design.showPhoto && (
+            <div className="h-28 w-24 shrink-0 overflow-hidden rounded-md border-2 border-[#C9A24B] p-1">
+              {/*
+                overflow-hidden + a fixed-size parent is what keeps
+                TemplatePhoto from stretching/squishing regardless of
+                its own internal aspect-ratio behavior. If it still
+                looks off, TemplatePhoto's inner <img> likely needs
+                `object-cover h-full w-full` — check that component.
+              */}
+              <TemplatePhoto
+                url={profile.photoUrl}
+                shape="rounded"
+                borderColor={gold}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
 
-      {/* Top Deity Invocation */}
-      <div className="text-center pt-2 pb-2">
-        <DeityHeader
-          symbol={profile.deitySymbol || "ganesh"}
-          title={profile.deityName || (isMarathi ? "॥ श्री गणेशाय नमः ॥" : "|| Shree Ganeshaya Namaha ||")}
-          color={primaryBurgundy}
-          className="my-1"
-        />
-      </div>
+          <div className="min-w-0 flex-1 pt-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#8A7F6B]">
+              {isMarathi ? "एक संक्षिप्त ओळख" : "A Brief Introduction"}
+            </p>
 
-      {/* Candidate Name & Header with Photo */}
-      <div className="flex flex-row items-center justify-between gap-4 pb-4 px-3 border-b-2 border-[#721124]/30 mt-1">
-        <div className="flex-1 text-left">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-wide text-[#721124] font-serif">
-            {personal.fullName || (isMarathi ? "शुभम यादव" : "Shubham Yadav")}
-          </h1>
-          <p className="text-sm font-semibold tracking-wider text-[#9E3447] mt-1 font-sans">
-            {education.designation || education.occupation || "Software Developer"}
-          </p>
+            <h1 className="mt-1 font-serif text-4xl font-bold leading-tight text-[#7A1B2B]">
+              {personal.fullName || (isMarathi ? "शुभम यादव" : "Shubham Yadav")}
+            </h1>
+
+            <p className="mt-1 text-sm font-medium uppercase tracking-[0.2em] text-[#8A7F6B]">
+              {education.designation ||
+                education.occupation ||
+                "Software Developer"}
+            </p>
+
+            {/* Quick stats row */}
+            <div className="mt-2 flex items-center gap-5">
+              <StatPill
+                icon="/templates/minimal-editorial/icon-calendar.png"
+                label={isMarathi ? "वय" : "Age"}
+                value={(personal as any).age}
+              />
+              <StatPill
+                icon="/templates/minimal-editorial/icon-height.png"
+                label={isMarathi ? "उंची" : "Height"}
+                value={personal.height}
+              />
+              <StatPill
+                icon="/templates/minimal-editorial/icon-religion.png"
+                label={isMarathi ? "धर्म" : "Religion"}
+                value={personal.religion}
+              />
+            </div>
+          </div>
         </div>
 
-        {design?.showPhoto && profile.photoUrl && (
-          <div className="shrink-0">
-            <TemplatePhoto
-              url={profile.photoUrl}
-              shape={profile.photoShape}
-              borderColor={primaryBurgundy}
-              className="w-24 h-32 sm:w-28 sm:h-36 shadow-md border-[2.5px] rounded-xl"
+        {/* Personal Details */}
+        <Section
+          title={isMarathi ? "वैयक्तिक माहिती" : "Personal Details"}
+          icon="/templates/minimal-editorial/icon-person.png"
+          className="mt-3"
+        >
+          <div className="grid grid-cols-2 gap-x-6">
+            <Row
+              label={isMarathi ? "पूर्ण नाव" : "Full Name"}
+              value={personal.fullName}
+            />
+            <Row
+              label={isMarathi ? "जन्मतारीख" : "Date of Birth"}
+              value={personal.dob}
+            />
+            <Row
+              label={isMarathi ? "जन्मवेळ" : "Time of Birth"}
+              value={personal.birthTime}
+            />
+            <Row
+              label={isMarathi ? "जन्मस्थान" : "Birth Place"}
+              value={personal.birthPlace}
+            />
+            <Row
+              label={isMarathi ? "वैवाहिक स्थिती" : "Marital Status"}
+              value={personal.maritalStatus}
+            />
+            <Row
+              label={isMarathi ? "मातृभाषा" : "Mother Tongue"}
+              value={(personal as any).motherTongue}
+            />
+            <Row label={isMarathi ? "जात" : "Caste"} value={personal.caste} />
+            <Row label={isMarathi ? "गोत्र" : "Gotra"} value={personal.gotra} />
+          </div>
+        </Section>
+
+        {/* Family Details */}
+        <Section
+          title={isMarathi ? "कौटुंबिक माहिती" : "Family Details"}
+          icon="/templates/minimal-editorial/icon-family.png"
+          className="mt-3"
+        >
+          <div className="grid grid-cols-2 gap-x-6">
+            <Row
+              label={isMarathi ? "वडिलांचे नाव" : "Father's Name"}
+              value={family.fatherName}
+            />
+            <Row
+              label={isMarathi ? "वडिलांचा व्यवसाय" : "Father's Occupation"}
+              value={family.fatherOccupation}
+            />
+            <Row
+              label={isMarathi ? "आईचे नाव" : "Mother's Name"}
+              value={family.motherName}
+            />
+            <Row
+              label={isMarathi ? "आईचा व्यवसाय" : "Mother's Occupation"}
+              value={family.motherOccupation}
+            />
+            <Row
+              label={isMarathi ? "भाऊ" : "Brothers"}
+              value={family.brotherCount}
+            />
+            <Row
+              label={isMarathi ? "बहीण" : "Sisters"}
+              value={family.sisterCount}
+            />
+            <Row
+              label={isMarathi ? "मूळ गाव" : "Native Place"}
+              value={family.nativePlace}
+            />
+            <Row
+              label={isMarathi ? "सध्याचे ठिकाण" : "Current City"}
+              value={family.familyLocation}
             />
           </div>
-        )}
-      </div>
+        </Section>
 
-      {/* 2-Column Main Details Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mt-5 px-3">
-        {/* Personal Details */}
-        <div className="space-y-1">
-          <div className="pb-1 mb-2 border-b-2 border-[#721124]/30">
-            <h3 className="text-sm sm:text-base font-bold tracking-wider text-[#721124] uppercase">
-              {isMarathi ? "वैयक्तिक माहिती" : "Personal Details"}
-            </h3>
-          </div>
-          <div className="text-xs sm:text-sm space-y-1">
-            <FieldRow label={isMarathi ? "जन्मतारीख" : "Date of Birth"} value={personal.dob} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "जन्मवेळ" : "Time of Birth"} value={personal.birthTime} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "जन्मस्थान" : "Place of Birth"} value={personal.birthPlace} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "उंची" : "Height"} value={personal.height} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "वर्ण" : "Complexion"} value={personal.complexion} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "धर्म" : "Religion"} value={personal.religion} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "जात / उपजात" : "Caste / Sub Caste"} value={`${personal.caste || ""} ${personal.subCaste ? `(${personal.subCaste})` : ""}`} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "गोत्र" : "Gotra"} value={personal.gotra} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            {design?.showAstrology && (
-              <>
-                <FieldRow label={isMarathi ? "राशी" : "Rashi"} value={personal.rashi} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-                <FieldRow label={isMarathi ? "नक्षत्र" : "Nakshatra"} value={personal.nakshatra} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-                <FieldRow label={isMarathi ? "मांगलिक" : "Manglik"} value={personal.manglik} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-              </>
-            )}
-          </div>
-        </div>
+        {/* Horoscope & Astrology */}
+        {design.showAstrology && (
+          <Section
+            title={
+              isMarathi ? "पत्रिका व ज्योतिष माहिती" : "Horoscope & Astrology"
+            }
+            icon="/templates/minimal-editorial/icon-religion.png"
+            className="mt-3"
+          >
+            <div className="grid grid-cols-2 gap-x-6">
+              <Row
+                label={isMarathi ? "राशी" : "Rashi"}
+                value={personal.rashi}
+              />
+              <Row
+                label={isMarathi ? "नक्षत्र" : "Nakshatra"}
+                value={personal.nakshatra}
+              />
+              <Row
+                label={isMarathi ? "चरण" : "Charan"}
+                value={personal.charan}
+              />
+              <Row label={isMarathi ? "गण" : "Gan"} value={personal.gan} />
+              <Row label={isMarathi ? "नाडी" : "Nadi"} value={personal.nadi} />
+              <Row
+                label={isMarathi ? "मंगळ" : "Manglik"}
+                value={personal.manglik}
+              />
+            </div>
+          </Section>
+        )}
 
         {/* Education & Career */}
-        <div className="space-y-1">
-          <div className="pb-1 mb-2 border-b-2 border-[#721124]/30">
-            <h3 className="text-sm sm:text-base font-bold tracking-wider text-[#721124] uppercase">
-              {isMarathi ? "शिक्षण व करिअर" : "Education & Career"}
-            </h3>
+        <Section
+          title={isMarathi ? "शिक्षण व नोकरी" : "Education & Career"}
+          icon="/templates/minimal-editorial/icon-education.png"
+          className="mt-3"
+        >
+          <div className="grid grid-cols-2 gap-x-6">
+            <Row
+              label={isMarathi ? "उच्च शिक्षण" : "Highest Qualification"}
+              value={education.highestEducation}
+            />
+            <Row
+              label={isMarathi ? "महाविद्यालय" : "College/University"}
+              value={education.college}
+            />
+            <Row
+              label={isMarathi ? "व्यवसाय / पद" : "Occupation / Role"}
+              value={`${education.occupation || ""}${
+                education.designation ? ` (${education.designation})` : ""
+              }`}
+            />
+            <Row
+              label={isMarathi ? "कंपनी" : "Company"}
+              value={education.companyName}
+            />
+            <Row
+              label={isMarathi ? "नोकरीचे ठिकाण" : "Work Location"}
+              value={education.workLocation}
+            />
+            <Row
+              label={isMarathi ? "वार्षिक उत्पन्न" : "Annual Income"}
+              value={education.annualIncome}
+            />
           </div>
-          <div className="text-xs sm:text-sm space-y-1">
-            <FieldRow label={isMarathi ? "उच्च शिक्षण" : "Highest Education"} value={education.highestEducation} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "व्यवसाय" : "Occupation"} value={education.occupation} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "पद" : "Designation"} value={education.designation} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "कंपनी" : "Company"} value={education.companyName} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "वार्षिक उत्पन्न" : "Annual Income"} value={education.annualIncome} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "कामाचे ठिकाण" : "Work Location"} value={education.workLocation} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          </div>
-        </div>
-      </div>
+        </Section>
 
-      {/* Family Details */}
-      <div className="mt-5 px-3">
-        <div className="pb-1 mb-2 border-b-2 border-[#721124]/30">
-          <h3 className="text-sm sm:text-base font-bold tracking-wider text-[#721124] uppercase">
-            {isMarathi ? "कौटुंबिक माहिती" : "Family Details"}
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-xs sm:text-sm">
-          <FieldRow label={isMarathi ? "वडिलांचे नाव" : "Father's Name"} value={family.fatherName} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          <FieldRow label={isMarathi ? "वडिलांचा व्यवसाय" : "Father's Work"} value={family.fatherOccupation} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          <FieldRow label={isMarathi ? "आईचे नाव" : "Mother's Name"} value={family.motherName} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          <FieldRow label={isMarathi ? "आईचा व्यवसाय" : "Mother's Work"} value={family.motherOccupation} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          <FieldRow label={isMarathi ? "भाऊ" : "Brothers"} value={family.brotherCount} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          <FieldRow label={isMarathi ? "बहीण" : "Sisters"} value={family.sisterCount} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          {family.nativePlace && (
-            <FieldRow label={isMarathi ? "मूळ गाव" : "Native Place"} value={family.nativePlace} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
+        {/* Expectations */}
+        {design.showExpectations && (
+          <Section
+            title={isMarathi ? "अपेक्षा" : "Expectations"}
+            icon="/templates/minimal-editorial/icon-expectations.png"
+            className="mt-3"
+          >
+            <Row
+              label={
+                isMarathi ? "अपेक्षित वय / उंची" : "Preferred Age / Height"
+              }
+              value={`${expectations.preferredAgeMin || ""}${
+                expectations.preferredAgeMax
+                  ? ` - ${expectations.preferredAgeMax}`
+                  : ""
+              }${
+                expectations.preferredHeightMin
+                  ? ` yrs • ${expectations.preferredHeightMin}`
+                  : ""
+              }`}
+            />
+            <Row
+              label={isMarathi ? "अपेक्षित शिक्षण" : "Preferred Education"}
+              value={expectations.preferredEducation}
+            />
+            <Row
+              label={
+                isMarathi ? "अपेक्षित नोकरी / ठिकाण" : "Preferred Career / City"
+              }
+              value={`${expectations.preferredOccupation || ""}${
+                expectations.preferredLocation
+                  ? ` • ${expectations.preferredLocation}`
+                  : ""
+              }`}
+            />
+            <Row
+              label={isMarathi ? "इतर अपेक्षा" : "Other Expectations"}
+              value={expectations.partnerExpectations}
+            />
+          </Section>
+        )}
+
+        {/* Contact Details */}
+        <Section
+          title={isMarathi ? "संपर्क माहिती" : "Contact Details"}
+          icon="/templates/minimal-editorial/icon-phone.png"
+          className="mt-3"
+        >
+          <div className="grid grid-cols-2 gap-x-6">
+            <Row
+              label={isMarathi ? "संपर्क व्यक्ती" : "Contact Person"}
+              value={contact.contactPerson}
+            />
+            <Row
+              label={isMarathi ? "मोबाईल क्र. १" : "Mobile 1"}
+              value={contact.phone1}
+            />
+            <Row
+              label={isMarathi ? "मोबाईल क्र. २" : "Mobile 2"}
+              value={contact.phone2}
+            />
+            <Row label={isMarathi ? "ईमेल" : "Email"} value={contact.email} />
+            <Row
+              className="col-span-2"
+              label={isMarathi ? "पत्ता" : "Address"}
+              value={contact.residentialAddress}
+            />
+          </div>
+        </Section>
+
+        {/*
+          Optional "Additional Note" section — uncomment once you add a
+          matching field (e.g. personal.additionalNote) to BiodataData.
+
+          {personal.additionalNote && (
+            <Section
+              title={isMarathi ? "टीप" : "Additional Note"}
+              icon="/templates/minimal-editorial/icon-envelope.png"
+              className="mt-3"
+            >
+              <p className="text-sm leading-relaxed text-[#2E2A26]">
+                {personal.additionalNote}
+              </p>
+            </Section>
           )}
-        </div>
-      </div>
+        */}
 
-      {/* Expectations (if enabled) */}
-      {design?.showExpectations && (
-        <div className="mt-4 px-3">
-          <div className="pb-1 mb-2 border-b-2 border-[#721124]/30">
-            <h3 className="text-sm sm:text-base font-bold tracking-wider text-[#721124] uppercase">
-              {isMarathi ? "अपेक्षा" : "Partner Expectations"}
-            </h3>
-          </div>
-          <div className="text-xs sm:text-sm space-y-1">
-            <FieldRow label={isMarathi ? "अपेक्षित वय / उंची" : "Preferred Age / Height"} value={`${expectations.preferredAgeMin || ""} - ${expectations.preferredAgeMax || ""} वर्षे ${expectations.preferredHeightMin ? `• ${expectations.preferredHeightMin}` : ""}`} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "अपेक्षित शिक्षण" : "Preferred Education"} value={expectations.preferredEducation} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-            <FieldRow label={isMarathi ? "इतर माहिती" : "Partner Expectations"} value={expectations.partnerExpectations} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          </div>
-        </div>
-      )}
-
-      {/* Contact Details */}
-      <div className="mt-5 px-3">
-        <div className="pb-1 mb-2 border-b-2 border-[#721124]/30">
-          <h3 className="text-sm sm:text-base font-bold tracking-wider text-[#721124] uppercase">
-            {isMarathi ? "संपर्क माहिती" : "Contact Details"}
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-xs sm:text-sm bg-[#F8F1F2] p-3 rounded-lg border border-[#721124]/20">
-          <FieldRow label={isMarathi ? "फोन" : "Phone"} value={`${contact.phone1 || ""} ${contact.phone2 ? `/ ${contact.phone2}` : ""}`} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          <FieldRow label={isMarathi ? "ईमेल" : "Email"} value={contact.email} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          <div className="col-span-1 sm:col-span-2">
-            <FieldRow label={isMarathi ? "पत्ता" : "Address"} value={contact.residentialAddress} accentColor={primaryBurgundy} className="py-0.5 text-xs text-[#261E1F]" />
-          </div>
+        {/* Bottom divider flourish */}
+        <div className="mt-3 flex justify-center">
+          <img
+            src="/templates/minimal-editorial/divider-center.png"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none h-auto w-24 select-none"
+          />
         </div>
       </div>
     </div>
